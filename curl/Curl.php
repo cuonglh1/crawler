@@ -1,26 +1,64 @@
 <?php
+include_once "../views/index.php";
+$servername = "localhost";
+$username = "root";
+$password = "1234567";
+$dbName = "abc";
 
-include_once "crawler/views/index.php";
+// Create connection
+$conn = new mysqli($servername, $username, $password, $dbName);
 
-        $uri=$_POST['url'];
-        echo $uri;
-        $reTitle = '/<h1 class.*>(.*?)<\/h1>/m';
-        $reDate='/<span class="date">(.*?)<\/span>/m';
+// Check connection
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
 
-        // Initialize CURL
-        $curl = curl_init($uri);
-        // Set return
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+$uri = $_POST['url'];
 
-        $result = curl_exec($curl);
-        // Disconnect CURL, free
-        curl_close($curl);
+$reTitle = '/<h1 class.*>(.*?)<\/h1>/m';
+$reDate = '/<span class="date">(.*?)<\/span>/m';
+$reContent = '/<p class="description">(.*)<\/article>/ms';
 
-        // preg_match_all($reTitle,$result ,$matches);
-        // var_dump($matches)
+// Initialize CURL
+$curl = curl_init($uri);
+// Set return
+curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
 
-        preg_match_all($reDate,$result,$matches);
+$result = curl_exec($curl);
+// Disconnect CURL, free
+curl_close($curl);
 
-        var_dump($matches[1][0]);
-    
-        
+function getData($re, $res) {
+    preg_match_all($re, $res, $matches);
+    return $matches[1];
+}
+
+$title = getData($reTitle, $result)[0];
+
+$date = getData($reDate, $result)[0];
+
+$content = getData($reContent, $result)[0];
+
+$title = addslashes($title);
+
+$article = addslashes($article);
+
+$datetime = addslashes($datetime);
+
+$sql = "INSERT INTO crawler (title, article, datetime) VALUES ('$title','$content','$date')";
+
+if (empty($title) || empty($content) || empty($date)) {
+    echo "no insert values empty";
+} else if ($conn->query($sql)) {
+    echo 'insert suc<br>';
+} else {
+    echo "Lỗi: " . $sql . "<br>" . $conn->error;
+}
+
+function showData() {
+    global $conn;
+    $sql = "SELECT* FROM crawler";
+    return $conn->query($sql);
+}
+
+$conn->close();
